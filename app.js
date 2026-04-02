@@ -224,7 +224,7 @@ function handleLogout() {
     currentAccount = null;
     return;
   }
-  msalInstance.logoutPopup();
+  msalInstance.logoutRedirect();
 }
 
 async function getAccessToken() {
@@ -236,9 +236,9 @@ async function getAccessToken() {
     });
     return resp.accessToken;
   } catch (err) {
-    // Fallback to popup
-    const resp = await msalInstance.acquireTokenPopup(sharePointRequest);
-    return resp.accessToken;
+    // Fallback to redirect (tránh popup bị chặn)
+    msalInstance.acquireTokenRedirect(sharePointRequest);
+    return null;
   }
 }
 
