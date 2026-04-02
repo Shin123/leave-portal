@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Leave Request Management System - Submit and manage leave requests seamlessly.">
+  <title>Leave Request Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏖️</text></svg>">
+</head>
+<body>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-container">
+      <div class="login-logo">🏖️</div>
+      <h1 class="login-title">Leave Portal</h1>
+      <p class="login-subtitle">Hệ thống quản lý nghỉ phép trực tuyến<br>Đăng nhập bằng tài khoản Microsoft 365</p>
+      <button class="btn-microsoft" id="btnLogin" onclick="handleLogin()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign in with Microsoft
+      </button>
+      <p class="login-footer">Bảo mật bởi Microsoft Identity Platform</p>
+    </div>
+  </div>
+
+  <!-- ==================== APP LAYOUT ==================== -->
+  <div class="app-layout" id="appLayout">
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand-icon">🏖️</div>
+          <div class="sidebar-brand-text">Leave<span>Portal</span></div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-label">Menu</div>
+        <button class="nav-item active" onclick="navigateTo('dashboard')" data-page="dashboard">
+          <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-item" onclick="navigateTo('new-request')" data-page="new-request">
+          <span class="icon">📝</span> Tạo đơn nghỉ
+        </button>
+        <button class="nav-item" onclick="navigateTo('my-requests')" data-page="my-requests">
+          <span class="icon">📋</span> Đơn của tôi
+        </button>
+
+
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">VN</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="user-email" id="userEmail">loading...</div>
+          </div>
+          <button class="btn-logout" onclick="handleLogout()" title="Đăng xuất">🚪</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+          <h2 class="page-title" id="pageTitle">Dashboard</h2>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-ghost btn-sm" onclick="refreshData()" title="Làm mới dữ liệu" style="font-size:16px;">🔄</button>
+          <span class="header-date" id="headerDate"></span>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="page-content">
+
+        <!-- ========== DASHBOARD ========== -->
+        <div class="page-view active" id="page-dashboard">
+          <!-- Stats -->
+          <div class="stats-grid">
+            <div class="stat-card blue">
+              <div class="stat-icon">📅</div>
+              <div class="stat-value" id="statQuota">--</div>
+              <div class="stat-label">Tổng ngày phép năm</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon">✅</div>
+              <div class="stat-value" id="statRemaining">--</div>
+              <div class="stat-label">Ngày phép còn lại</div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon">📤</div>
+              <div class="stat-value" id="statTaken">--</div>
+              <div class="stat-label">Đã sử dụng</div>
+            </div>
+            <div class="stat-card purple">
+              <div class="stat-icon">⏳</div>
+              <div class="stat-value" id="statPending">--</div>
+              <div class="stat-label">Đang chờ duyệt</div>
+            </div>
+          </div>
+
+          <!-- Balance Overview -->
+          <div class="balance-overview">
+            <div class="balance-main">
+              <div class="balance-number" id="balanceNumber">--</div>
+              <div class="balance-label">Ngày phép còn lại</div>
+              <div class="balance-bar" style="margin-top: 20px;">
+                <div class="balance-bar-fill" id="balanceBar" style="width: 0%"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top: 8px; font-size:12px; color:var(--text-muted);">
+                <span>Đã dùng: <strong id="barUsed">0</strong></span>
+                <span>Tổng: <strong id="barTotal">0</strong></span>
+              </div>
+            </div>
+            <div class="balance-detail">
+              <h3 style="font-size:16px; font-weight:600; margin-bottom:4px;">Chi tiết nghỉ phép</h3>
+              <div class="balance-row">
+                <div class="balance-row-label">
+                  <span class="balance-row-dot" style="background:var(--accent-blue)"></span>
+                  Nghỉ phép năm
+                </div>
+                <div class="balance-row-value" id="detailAnnual" style="color:var(--accent-blue)">0</div>
+              </div>
+              <div class="balance-row">
+                <div class="balance-row-label">
+                  <span class="balance-row-dot" style="background:var(--accent-green)"></span>
+                  Nghỉ ốm
+                </div>
+                <div class="balance-row-value" id="detailSick" style="color:var(--accent-green)">0</div>
+              </div>
+              <div class="balance-row">
+                <div class="balance-row-label">
+                  <span class="balance-row-dot" style="background:var(--accent-yellow)"></span>
+                  Nghỉ không phép
+                </div>
+                <div class="balance-row-value" id="detailUnpaid" style="color:var(--accent-yellow)">0</div>
+              </div>
+              <div class="balance-row">
+                <div class="balance-row-label">
+                  <span class="balance-row-dot" style="background:var(--accent-red)"></span>
+                  Khác
+                </div>
+                <div class="balance-row-value" id="detailOther" style="color:var(--accent-red)">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Requests -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📋 Đơn nghỉ gần đây</div>
+              <button class="btn btn-ghost btn-sm" onclick="navigateTo('my-requests')">Xem tất cả →</button>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Loại nghỉ</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Số ngày</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="recentRequestsBody">
+                  <tr>
+                    <td colspan="5">
+                      <div class="page-loading">
+                        <div class="loading-spinner"></div>
+                        Đang tải dữ liệu...
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== NEW REQUEST ========== -->
+        <div class="page-view" id="page-new-request">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📝 Tạo đơn xin nghỉ phép</div>
+            </div>
+            <div class="card-body">
+              <form id="leaveForm" onsubmit="handleSubmitLeave(event)">
+                <div class="form-grid">
+                  <!-- Employee (auto-filled) -->
+                  <div class="form-group">
+                    <label class="form-label">👤 Nhân viên</label>
+                    <div class="info-field" id="formEmployee">--</div>
+                  </div>
+
+                  <!-- Leave Balance Summary -->
+                  <div class="form-group">
+                    <label class="form-label">📊 Tổng quan ngày phép</label>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                      <div style="background:rgba(99,102,241,0.15); border-radius:8px; padding:10px; text-align:center;">
+                        <div style="font-size:20px; font-weight:700; color:var(--accent-blue)" id="formQuota">--</div>
+                        <div style="font-size:11px; color:var(--text-muted)">Tổng phép năm</div>
+                      </div>
+                      <div style="background:rgba(16,185,129,0.15); border-radius:8px; padding:10px; text-align:center;">
+                        <div style="font-size:20px; font-weight:700; color:var(--accent-green)" id="formRemaining">--</div>
+                        <div style="font-size:11px; color:var(--text-muted)">Còn lại</div>
+                      </div>
+                      <div style="background:rgba(245,158,11,0.15); border-radius:8px; padding:10px; text-align:center;">
+                        <div style="font-size:20px; font-weight:700; color:var(--accent-yellow)" id="formTaken">--</div>
+                        <div style="font-size:11px; color:var(--text-muted)">Đã sử dụng</div>
+                      </div>
+                      <div style="background:rgba(168,85,247,0.15); border-radius:8px; padding:10px; text-align:center;">
+                        <div style="font-size:20px; font-weight:700; color:var(--accent-purple)" id="formPending">--</div>
+                        <div style="font-size:11px; color:var(--text-muted)">Chờ duyệt</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Leave Type -->
+                  <div class="form-group">
+                    <label class="form-label" for="leaveType">📌 Loại nghỉ <span class="required">*</span></label>
+                    <select class="form-control" id="leaveType" required>
+                      <option value="">-- Chọn loại nghỉ --</option>
+                      <option value="Nghỉ phép năm">Nghỉ phép năm</option>
+                      <option value="Nghỉ ốm">Nghỉ ốm</option>
+                      <option value="Nghỉ không phép">Nghỉ không phép</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
+
+
+
+                  <!-- From Date -->
+                  <div class="form-group">
+                    <label class="form-label" for="fromDate">📆 Từ ngày <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="fromDate" required onchange="calculateDays()">
+                  </div>
+
+                  <!-- To Date -->
+                  <div class="form-group">
+                    <label class="form-label" for="toDate">📆 Đến ngày <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="toDate" required onchange="calculateDays()">
+                  </div>
+
+                  <!-- Days off (auto-calc) -->
+                  <div class="form-group">
+                    <label class="form-label">🔢 Số ngày nghỉ</label>
+                    <div class="info-field" id="formDaysOff">0 ngày</div>
+                  </div>
+
+                  <!-- Empty spacer -->
+                  <div class="form-group"></div>
+
+                  <!-- Reason -->
+                  <div class="form-group full-width">
+                    <label class="form-label" for="reason">💬 Lý do <span class="required">*</span></label>
+                    <textarea class="form-control" id="reason" placeholder="Nhập lý do xin nghỉ..." required></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary" id="btnSubmitLeave">
+                    📤 Gửi đơn
+                  </button>
+                  <button type="reset" class="btn btn-ghost" onclick="resetForm()">
+                    🔄 Làm mới
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== MY REQUESTS ========== -->
+        <div class="page-view" id="page-my-requests">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📋 Đơn nghỉ của tôi</div>
+              <div class="filters-row">
+                <button class="filter-chip active" onclick="filterRequests('all', this)">Tất cả</button>
+                <button class="filter-chip" onclick="filterRequests('Waiting', this)">⏳ Chờ duyệt</button>
+                <button class="filter-chip" onclick="filterRequests('Approved', this)">✅ Đã duyệt</button>
+                <button class="filter-chip" onclick="filterRequests('Rejected', this)">❌ Từ chối</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Loại nghỉ</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Số ngày</th>
+                    <th>Lý do</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="myRequestsBody">
+                  <tr>
+                    <td colspan="8">
+                      <div class="page-loading">
+                        <div class="loading-spinner"></div>
+                        Đang tải...
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== DETAIL MODAL ==================== -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📄 Chi tiết đơn nghỉ</div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid" id="detailContent">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <!-- MSAL.js from CDN (FREE) -->
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
