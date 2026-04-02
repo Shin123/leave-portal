@@ -208,29 +208,8 @@ async function handleLogin() {
   const btn = document.getElementById('btnLogin');
   if (btn) btn.disabled = true;
 
-  try {
-    const resp = await msalInstance.loginPopup(loginRequest);
-    currentAccount = resp.account;
-    onLoginSuccess();
-  } catch (err) {
-    if (err.errorCode === 'interaction_in_progress') {
-      // Xóa MSAL interaction state bị kẹt
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.includes('msal') || key.includes('interaction')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-      showToast('⚠️ Đã xóa phiên cũ. Vui lòng nhấn Sign in lại.', 'info');
-    } else if (err.errorCode === 'user_cancelled') {
-      // User tự đóng popup → bỏ qua
-    } else {
-      console.error('Login failed:', err);
-      showToast('Đăng nhập thất bại: ' + err.message, 'error');
-    }
-  } finally {
-    loginInProgress = false;
-    if (btn) btn.disabled = false;
-  }
+  // Dùng redirect thay vì popup (tránh lỗi popup bị chặn / không tự đóng)
+  msalInstance.loginRedirect(loginRequest);
 }
 
 function handleLogout() {
