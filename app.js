@@ -29,25 +29,30 @@ const msalConfig = {
     clientId: CONFIG.clientId,
     authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
     redirectUri: CONFIG.redirectUri,
+    navigateToLoginRequestUrl: true, // Quay lại đúng trang sau khi login
   },
   cache: {
-    cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
+    cacheLocation: 'localStorage',        // Giữ session qua tab/refresh
+    storeAuthStateInCookie: true,          // Fix lỗi IE/Edge + cross-tab
+  },
+  system: {
+    allowRedirectInIframe: false,
+    loggerOptions: {
+      logLevel: 0, // Error only
+    },
   },
 };
 
-// Login chỉ cần openid + profile (không cần .default)
+// Login scopes - chỉ cần cơ bản
 const loginRequest = {
   scopes: ['openid', 'profile', 'User.Read'],
 };
 
-// Scopes cho SharePoint API calls (dùng khi gọi REST API)
-const sharePointRequest = {
-  scopes: [
-    'https://masterdx1.sharepoint.com/AllSites.Read',
-    'https://masterdx1.sharepoint.com/AllSites.Write',
-  ],
-};
+// SharePoint API scopes - yêu cầu khi gọi REST API
+const sharePointScopes = [
+  'https://masterdx1.sharepoint.com/AllSites.Read',
+  'https://masterdx1.sharepoint.com/AllSites.Write',
+];
 
 // ─── APP STATE ───────────────────────────────────────────────────────────────
 let msalInstance = null;
@@ -143,43 +148,63 @@ let msalReady = false;
 let loginInProgress = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Nếu đang chạy trong popup cũ của MSAL → không làm gì, đóng popup
-  if (window.opener && window.opener !== window) {
-    return; // MSAL sẽ tự xử lý popup callback
-  }
+  // Nếu đang chạy trong popup → bỏ qua
+  if (window.opener && window.opener !== window) return;
 
   updateHeaderDate();
 
   if (IS_DEMO) {
-    console.log('🟡 Running in DEMO mode — update CONFIG in app.js to connect to SharePoint');
+    console.log('🟡 Running in DEMO mode');
     msalReady = true;
-  } else {
+    return;
+  }
+
+  try {
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+
+    // 1. Xử lý redirect callback TRƯỚC TIÊN (bắt buộc)
+    let redirectResp = null;
     try {
-      msalInstance = new msal.PublicClientApplication(msalConfig);
-
-      // PHẢI await handleRedirectPromise TRƯỚC KHI làm bất cứ gì khác
-      const redirectResp = await msalInstance.handleRedirectPromise().catch(() => null);
-      if (redirectResp) {
-        currentAccount = redirectResp.account;
-        msalReady = true;
-        onLoginSuccess();
-        return;
-      }
-
-      msalReady = true;
-
-      // Check if already logged in
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) {
-        currentAccount = accounts[0];
-        onLoginSuccess();
-      }
-    } catch (e) {
-      console.error('MSAL init error:', e);
-      msalReady = true;
+      redirectResp = await msalInstance.handleRedirectPromise();
+    } catch (redirectErr) {
+      console.warn('Redirect handling error:', redirectErr);
+      // Xóa state kẹt nếu có
+      clearMsalState();
     }
+
+    msalReady = true;
+
+    // 2. Nếu vừa redirect về từ login
+    if (redirectResp && redirectResp.account) {
+      currentAccount = redirectResp.account;
+      onLoginSuccess();
+      return;
+    }
+
+    // 3. Kiểm tra session cũ
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      currentAccount = accounts[0];
+      onLoginSuccess();
+    }
+  } catch (e) {
+    console.error('MSAL init error:', e);
+    clearMsalState();
+    msalReady = true;
   }
 });
+
+// Xóa MSAL state bị kẹt trong storage
+function clearMsalState() {
+  ['sessionStorage', 'localStorage'].forEach(storageType => {
+    const storage = window[storageType];
+    Object.keys(storage).forEach(key => {
+      if (key.includes('msal.interaction')) {
+        storage.removeItem(key);
+      }
+    });
+  });
+}
 
 // ─── DATE HEADER ─────────────────────────────────────────────────────────────
 function updateHeaderDate() {
@@ -197,15 +222,8 @@ async function handleLogin() {
     return;
   }
 
-  // Chờ MSAL sẵn sàng
-  if (!msalReady) {
-    showToast('⏳ Đang khởi tạo, vui lòng thử lại...', 'info');
-    return;
-  }
-
-  // Chặn click nhiều lần
-  if (loginInProgress) {
-    showToast('⏳ Đang xử lý đăng nhập...', 'info');
+  if (!msalReady || loginInProgress) {
+    showToast('⏳ Đang xử lý, vui lòng đợi...', 'info');
     return;
   }
 
@@ -213,8 +231,18 @@ async function handleLogin() {
   const btn = document.getElementById('btnLogin');
   if (btn) btn.disabled = true;
 
-  // Dùng redirect thay vì popup (tránh lỗi popup bị chặn / không tự đóng)
-  msalInstance.loginRedirect(loginRequest);
+  // Xóa state cũ trước khi login (phòng lỗi interaction_in_progress)
+  clearMsalState();
+
+  // Redirect — ổn định nhất, không popup
+  try {
+    await msalInstance.loginRedirect(loginRequest);
+  } catch (err) {
+    console.error('Login redirect error:', err);
+    loginInProgress = false;
+    if (btn) btn.disabled = false;
+    showToast('Lỗi đăng nhập. Vui lòng thử lại.', 'error');
+  }
 }
 
 function handleLogout() {
@@ -224,21 +252,33 @@ function handleLogout() {
     currentAccount = null;
     return;
   }
-  msalInstance.logoutRedirect();
+  msalInstance.logoutRedirect({ postLogoutRedirectUri: CONFIG.redirectUri });
 }
 
 async function getAccessToken() {
   if (IS_DEMO) return 'DEMO_TOKEN';
+
+  const tokenRequest = {
+    scopes: sharePointScopes,
+    account: currentAccount,
+  };
+
   try {
-    const resp = await msalInstance.acquireTokenSilent({
-      ...sharePointRequest,
-      account: currentAccount,
-    });
+    // 1. Thử lấy token im lặng (từ cache)
+    const resp = await msalInstance.acquireTokenSilent(tokenRequest);
     return resp.accessToken;
-  } catch (err) {
-    // Fallback to redirect (tránh popup bị chặn)
-    msalInstance.acquireTokenRedirect(sharePointRequest);
-    return null;
+  } catch (silentErr) {
+    console.warn('Silent token failed, trying redirect...');
+    try {
+      // 2. Thử lại với forceRefresh
+      const resp = await msalInstance.acquireTokenSilent({ ...tokenRequest, forceRefresh: true });
+      return resp.accessToken;
+    } catch (retryErr) {
+      // 3. Redirect để lấy token mới
+      clearMsalState();
+      msalInstance.acquireTokenRedirect({ scopes: sharePointScopes });
+      return null; // Trang sẽ redirect, không tiếp tục
+    }
   }
 }
 
@@ -273,6 +313,8 @@ async function spGet(listName, filter, select, orderby, top) {
   if (IS_DEMO) return getDemoData(listName, filter);
 
   const token = await getAccessToken();
+  if (!token) return []; // Đang redirect để lấy token, trả về rỗng
+
   let url = `${CONFIG.sharePointSiteUrl}/_api/web/lists/getbytitle('${encodeURIComponent(listName)}')/items?`;
   const params = [];
   if (select) params.push(`$select=${select}`);
@@ -288,6 +330,13 @@ async function spGet(listName, filter, select, orderby, top) {
     },
   });
 
+  if (resp.status === 401) {
+    // Token hết hạn → redirect lấy token mới
+    clearMsalState();
+    msalInstance.acquireTokenRedirect({ scopes: sharePointScopes });
+    return [];
+  }
+
   if (!resp.ok) throw new Error(`SharePoint API error: ${resp.status}`);
   const data = await resp.json();
   return data.value;
@@ -297,6 +346,8 @@ async function spCreate(listName, itemData) {
   if (IS_DEMO) return createDemoItem(listName, itemData);
 
   const token = await getAccessToken();
+  if (!token) throw new Error('Đang chuyển hướng để xác thực...');
+
   const url = `${CONFIG.sharePointSiteUrl}/_api/web/lists/getbytitle('${encodeURIComponent(listName)}')/items`;
 
   const resp = await fetch(url, {
