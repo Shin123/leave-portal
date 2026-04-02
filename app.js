@@ -139,26 +139,29 @@ const DEMO_REQUESTS = [
 ];
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+let msalReady = false;
+let loginInProgress = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
   updateHeaderDate();
 
   if (IS_DEMO) {
     console.log('🟡 Running in DEMO mode — update CONFIG in app.js to connect to SharePoint');
+    msalReady = true;
   } else {
     try {
       msalInstance = new msal.PublicClientApplication(msalConfig);
 
-      // Xử lý redirect callback (quan trọng để tránh lỗi interaction_in_progress)
-      try {
-        const redirectResp = await msalInstance.handleRedirectPromise();
-        if (redirectResp) {
-          currentAccount = redirectResp.account;
-          onLoginSuccess();
-          return;
-        }
-      } catch (redirectErr) {
-        console.warn('Redirect handling:', redirectErr);
+      // PHẢI await handleRedirectPromise TRƯỚC KHI làm bất cứ gì khác
+      const redirectResp = await msalInstance.handleRedirectPromise().catch(() => null);
+      if (redirectResp) {
+        currentAccount = redirectResp.account;
+        msalReady = true;
+        onLoginSuccess();
+        return;
       }
+
+      msalReady = true;
 
       // Check if already logged in
       const accounts = msalInstance.getAllAccounts();
@@ -168,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (e) {
       console.error('MSAL init error:', e);
+      msalReady = true;
     }
   }
 });
@@ -188,23 +192,44 @@ async function handleLogin() {
     return;
   }
 
+  // Chờ MSAL sẵn sàng
+  if (!msalReady) {
+    showToast('⏳ Đang khởi tạo, vui lòng thử lại...', 'info');
+    return;
+  }
+
+  // Chặn click nhiều lần
+  if (loginInProgress) {
+    showToast('⏳ Đang xử lý đăng nhập...', 'info');
+    return;
+  }
+
+  loginInProgress = true;
+  const btn = document.getElementById('btnLogin');
+  if (btn) btn.disabled = true;
+
   try {
     const resp = await msalInstance.loginPopup(loginRequest);
     currentAccount = resp.account;
     onLoginSuccess();
   } catch (err) {
-    // Nếu bị lỗi interaction_in_progress → xóa cache và thử lại
     if (err.errorCode === 'interaction_in_progress') {
-      console.warn('Clearing stuck interaction state...');
-      sessionStorage.clear();
-      showToast('⚠️ Vui lòng nhấn Sign in lại', 'info');
-      return;
+      // Xóa MSAL interaction state bị kẹt
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('msal') || key.includes('interaction')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      showToast('⚠️ Đã xóa phiên cũ. Vui lòng nhấn Sign in lại.', 'info');
+    } else if (err.errorCode === 'user_cancelled') {
+      // User tự đóng popup → bỏ qua
+    } else {
+      console.error('Login failed:', err);
+      showToast('Đăng nhập thất bại: ' + err.message, 'error');
     }
-    // Nếu user tự đóng popup → không báo lỗi
-    if (err.errorCode === 'user_cancelled') return;
-
-    console.error('Login failed:', err);
-    showToast('Đăng nhập thất bại: ' + err.message, 'error');
+  } finally {
+    loginInProgress = false;
+    if (btn) btn.disabled = false;
   }
 }
 
