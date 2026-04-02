@@ -143,6 +143,11 @@ let msalReady = false;
 let loginInProgress = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Nếu đang chạy trong popup cũ của MSAL → không làm gì, đóng popup
+  if (window.opener && window.opener !== window) {
+    return; // MSAL sẽ tự xử lý popup callback
+  }
+
   updateHeaderDate();
 
   if (IS_DEMO) {
