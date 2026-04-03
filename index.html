@@ -256,6 +256,11 @@
                   <div class="form-group">
                     <label class="form-label">🔢 Số ngày nghỉ</label>
                     <div class="info-field" id="formDaysOff">0 ngày</div>
+                    <label class="toggle-label" style="margin-top:8px; display:flex; align-items:center; gap:10px; cursor:pointer;">
+                      <input type="checkbox" id="halfDayToggle" onchange="calculateDays()" style="display:none;">
+                      <span class="toggle-switch"></span>
+                      <span style="font-size:13px; color:var(--text-secondary);">Nghỉ nửa ngày (0.5)</span>
+                    </label>
                   </div>
 
                   <!-- Empty spacer -->

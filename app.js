@@ -708,6 +708,7 @@ function formatDateInput(d) {
 function calculateDays() {
   const fromVal = document.getElementById('fromDate').value;
   const toVal = document.getElementById('toDate').value;
+  const isHalfDay = document.getElementById('halfDayToggle')?.checked;
 
   if (!fromVal || !toVal) {
     document.getElementById('formDaysOff').textContent = '0 ngày';
@@ -727,7 +728,14 @@ function calculateDays() {
 
   // Tính tất cả ngày (bao gồm cả T7/CN)
   const diffTime = to.getTime() - from.getTime();
-  const count = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 vì tính cả ngày đầu
+  let count = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+  // Nghỉ nửa ngày
+  if (isHalfDay) {
+    count = 0.5;
+    // Tự set ngày kết thúc = ngày bắt đầu
+    document.getElementById('toDate').value = fromVal;
+  }
 
   document.getElementById('formDaysOff').textContent = count + ' ngày';
   return count;
