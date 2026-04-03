@@ -734,21 +734,22 @@ select.form-control {
 
 /* ===== Toggle Switch ===== */
 .toggle-switch {
-  width: 40px;
-  height: 22px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: 11px;
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   position: relative;
   transition: all var(--transition-base);
   flex-shrink: 0;
+  display: inline-block;
 }
 
 .toggle-switch::after {
   content: '';
   width: 16px;
   height: 16px;
-  background: var(--text-muted);
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   position: absolute;
   top: 2px;
@@ -763,7 +764,7 @@ input:checked + .toggle-switch {
 
 input:checked + .toggle-switch::after {
   background: #fff;
-  left: 20px;
+  left: 22px;
 }
 
 /* ===== Buttons ===== */
