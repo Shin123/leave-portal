@@ -488,9 +488,17 @@ async function loadDashboard() {
     // Load balance
     const balanceData = await spGet(CONFIG.leaveBalanceName);
     const userEmail = currentAccount.username || DEMO_USER.username;
+    console.log('🔍 Looking for balance of:', userEmail);
+    console.log('📋 All balances:', balanceData.map(b => b.EmployeeEmail));
+
     leaveBalance = balanceData.find(
-      b => b.EmployeeEmail?.toLowerCase() === userEmail.toLowerCase()
-    ) || balanceData[0];
+      b => b.EmployeeEmail?.toLowerCase().trim() === userEmail.toLowerCase().trim()
+    );
+
+    if (!leaveBalance) {
+      console.warn('⚠️ No LeaveBalance found for', userEmail);
+      leaveBalance = { AnnualQuota: 0, DaysTaken: 0, RemainingDays: 0 };
+    }
 
     // Load requests
     leaveRequests = await spGet(CONFIG.leaveListName);
