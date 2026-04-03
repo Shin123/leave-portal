@@ -489,22 +489,16 @@ async function loadDashboard() {
     const balanceData = await spGet(CONFIG.leaveBalanceName);
     const userEmail = currentAccount.username || DEMO_USER.username;
     
-    // Debug: xem cấu trúc dữ liệu thực tế từ SharePoint
     console.log('🔍 User email:', userEmail);
-    console.log('📋 Balance data (raw):', JSON.stringify(balanceData, null, 2));
-    if (balanceData.length > 0) {
-      console.log('📋 First record fields:', Object.keys(balanceData[0]));
-    }
 
-    // Tìm balance theo EmployeeEmail hoặc Title (SharePoint có thể dùng tên khác)
+    // LeaveBalance dùng cột Title để lưu EmployeeEmail
     leaveBalance = balanceData.find(b => {
-      const email = (b.EmployeeEmail || b.Title || b.Email || '').toLowerCase().trim();
+      const email = (b.Title || '').toLowerCase().trim();
       return email === userEmail.toLowerCase().trim();
     });
 
     if (!leaveBalance) {
       console.warn('⚠️ No LeaveBalance found for', userEmail);
-      console.warn('⚠️ Available emails:', balanceData.map(b => b.EmployeeEmail || b.Title || b.Email || 'N/A'));
       leaveBalance = { AnnualQuota: 0, DaysTaken: 0, RemainingDays: 0 };
     } else {
       console.log('✅ Found balance:', leaveBalance);
