@@ -601,7 +601,7 @@ function getStatusBadge(status) {
 function renderRecentRequests(items) {
   const tbody = document.getElementById('recentRequestsBody');
   if (items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5">
+    tbody.innerHTML = `<tr><td colspan="6">
       <div class="empty-state">
         <div class="empty-icon">📭</div>
         <div class="empty-title">Chưa có đơn nghỉ nào</div>
@@ -617,6 +617,7 @@ function renderRecentRequests(items) {
       <td>${formatDate(r.FromDate)}</td>
       <td>${formatDate(r.ToDate)}</td>
       <td><strong>${r.DayLeave || 0}</strong></td>
+      <td><strong style="color:var(--accent-cyan)">${r.DayWFH || 0}</strong></td>
       <td>${getStatusBadge(r.Status)}</td>
     </tr>
   `).join('');
@@ -865,6 +866,10 @@ function showDetail(itemId) {
     <div class="detail-item">
       <div class="detail-label">Số ngày nghỉ</div>
       <div class="detail-value" style="font-size:20px; font-weight:700; color:var(--accent-blue)">${item.DayLeave || 0}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Số ngày WFH</div>
+      <div class="detail-value" style="font-size:20px; font-weight:700; color:var(--accent-cyan)">${item.DayWFH || 0}</div>
     </div>
     <div class="detail-item">
       <div class="detail-label">Trạng thái</div>
