@@ -710,7 +710,18 @@ function formatDateInput(d) {
 function onLeaveTypeChange() {
   const type = document.getElementById('leaveType').value;
   const hint = document.getElementById('wfhHint');
-  if (hint) hint.style.display = type === 'WFH' ? 'block' : 'none';
+  const daysOffGroup = document.getElementById('daysOffGroup');
+  const daysWfhGroup = document.getElementById('daysWfhGroup');
+
+  if (type === 'WFH') {
+    if (hint) hint.style.display = 'block';
+    if (daysOffGroup) daysOffGroup.style.display = 'none';
+    if (daysWfhGroup) daysWfhGroup.style.display = 'block';
+  } else {
+    if (hint) hint.style.display = 'none';
+    if (daysOffGroup) daysOffGroup.style.display = 'block';
+    if (daysWfhGroup) daysWfhGroup.style.display = 'none';
+  }
   calculateDays();
 }
 
@@ -742,11 +753,15 @@ function calculateDays() {
   // Nghỉ nửa ngày
   if (isHalfDay) {
     count = 0.5;
-    // Tự set ngày kết thúc = ngày bắt đầu
     document.getElementById('toDate').value = fromVal;
   }
 
-  document.getElementById('formDaysOff').textContent = count + ' ngày';
+  const leaveType = document.getElementById('leaveType')?.value;
+  if (leaveType === 'WFH') {
+    document.getElementById('formDaysWfh').textContent = count + ' ngày';
+  } else {
+    document.getElementById('formDaysOff').textContent = count + ' ngày';
+  }
   return count;
 }
 
@@ -771,15 +786,25 @@ async function handleSubmitLeave(e) {
   submitBtn.innerHTML = '<div class="loading-spinner"></div> Đang gửi...';
 
   try {
-    await spCreate(CONFIG.leaveListName, {
+    // WFH → DayWFH, Nghỉ phép → DayLeave
+    const submitData = {
       Title: userEmail,
       Typeofleave: leaveType,
       FromDate: fromDate + 'T00:00:00',
       ToDate: toDate + 'T00:00:00',
-      DayLeave: days,
       Reason: reason,
       Status: 'Waiting',
-    });
+    };
+
+    if (leaveType === 'WFH') {
+      submitData.DayWFH = days;
+      submitData.DayLeave = 0;
+    } else {
+      submitData.DayLeave = days;
+      submitData.DayWFH = 0;
+    }
+
+    await spCreate(CONFIG.leaveListName, submitData);
 
     showToast('🎉 Gửi đơn thành công! Đơn đang chờ duyệt.', 'success');
     document.getElementById('leaveForm').reset();

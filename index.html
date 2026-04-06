@@ -254,8 +254,8 @@
                     <input type="date" class="form-control" id="toDate" required onchange="calculateDays()">
                   </div>
 
-                  <!-- Days off (auto-calc) -->
-                  <div class="form-group">
+                  <!-- Days off (auto-calc) - for regular leave -->
+                  <div class="form-group" id="daysOffGroup">
                     <label class="form-label">🔢 Số ngày nghỉ</label>
                     <div class="info-field" id="formDaysOff">0 ngày</div>
                     <label class="toggle-label" style="margin-top:8px; display:flex; align-items:center; gap:10px; cursor:pointer;">
@@ -263,6 +263,12 @@
                       <span class="toggle-switch"></span>
                       <span style="font-size:13px; color:var(--text-secondary);">Nghỉ nửa ngày (0.5)</span>
                     </label>
+                  </div>
+
+                  <!-- Days WFH - only for WFH type -->
+                  <div class="form-group" id="daysWfhGroup" style="display:none;">
+                    <label class="form-label">🏠 Số ngày WFH</label>
+                    <div class="info-field" id="formDaysWfh" style="border-color:rgba(34,211,238,0.3); color:var(--accent-cyan);">0 ngày</div>
                   </div>
 
                   <!-- Empty spacer -->
