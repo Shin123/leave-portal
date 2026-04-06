@@ -656,6 +656,7 @@ tbody tr:last-child td {
 .leave-type.sick { background: rgba(52, 211, 153, 0.1); color: var(--accent-green); }
 .leave-type.unpaid { background: rgba(251, 191, 36, 0.1); color: var(--accent-yellow); }
 .leave-type.other { background: rgba(248, 113, 113, 0.1); color: var(--accent-red); }
+.leave-type.wfh { background: rgba(34, 211, 238, 0.1); color: var(--accent-cyan); }
 
 /* ===== Form Styles ===== */
 .form-grid {

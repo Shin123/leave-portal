@@ -229,13 +229,15 @@
                   <!-- Leave Type -->
                   <div class="form-group">
                     <label class="form-label" for="leaveType">📌 Loại nghỉ <span class="required">*</span></label>
-                    <select class="form-control" id="leaveType" required>
+                    <select class="form-control" id="leaveType" required onchange="onLeaveTypeChange()">
                       <option value="">-- Chọn loại nghỉ --</option>
                       <option value="Nghỉ phép năm">Nghỉ phép năm</option>
                       <option value="Nghỉ ốm">Nghỉ ốm</option>
                       <option value="Nghỉ không phép">Nghỉ không phép</option>
+                      <option value="WFH">WFH (Làm việc tại nhà)</option>
                       <option value="Khác">Khác</option>
                     </select>
+                    <div id="wfhHint" style="display:none; font-size:12px; color:var(--accent-green); margin-top:4px;">✅ WFH không trừ ngày phép</div>
                   </div>
 
 

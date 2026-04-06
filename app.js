@@ -578,6 +578,7 @@ function getLeaveTypeClass(type) {
   if (type === 'Nghỉ phép năm') return 'annual';
   if (type === 'Nghỉ ốm') return 'sick';
   if (type === 'Nghỉ không phép') return 'unpaid';
+  if (type === 'WFH') return 'wfh';
   return 'other';
 }
 
@@ -705,6 +706,14 @@ function formatDateInput(d) {
   return d.toISOString().split('T')[0];
 }
 
+// Khi đổi loại nghỉ
+function onLeaveTypeChange() {
+  const type = document.getElementById('leaveType').value;
+  const hint = document.getElementById('wfhHint');
+  if (hint) hint.style.display = type === 'WFH' ? 'block' : 'none';
+  calculateDays();
+}
+
 function calculateDays() {
   const fromVal = document.getElementById('fromDate').value;
   const toVal = document.getElementById('toDate').value;
@@ -750,7 +759,7 @@ async function handleSubmitLeave(e) {
   const reason = document.getElementById('reason').value;
   const days = calculateDays();
 
-  if (days <= 0) {
+  if (days <= 0 && leaveType !== 'WFH') {
     showToast('Ngày kết thúc phải sau ngày bắt đầu', 'error');
     return;
   }
