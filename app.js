@@ -541,6 +541,12 @@ async function loadDashboard() {
     document.getElementById('detailUnpaid').textContent = countByType('Nghỉ không phép');
     document.getElementById('detailOther').textContent = countByType('Khác');
 
+    // WFH count (dùng DayWFH thay vì DayLeave)
+    const wfhDays = myRequests
+      .filter(r => r.Typeofleave === 'WFH' && r.Status === 'Approved')
+      .reduce((sum, r) => sum + (r.DayWFH || r.DayLeave || 0), 0);
+    document.getElementById('detailWfh').textContent = wfhDays;
+
     // Recent requests (last 5)
     const sorted = [...myRequests].sort((a, b) => new Date(b.FromDate) - new Date(a.FromDate));
     renderRecentRequests(sorted.slice(0, 5));
@@ -639,7 +645,7 @@ function renderMyRequests(items) {
 
   const tbody = document.getElementById('myRequestsBody');
   if (sorted.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8">
+    tbody.innerHTML = `<tr><td colspan="9">
       <div class="empty-state">
         <div class="empty-icon">📭</div>
         <div class="empty-title">Không có đơn nào</div>
@@ -655,6 +661,7 @@ function renderMyRequests(items) {
       <td>${formatDate(r.FromDate)}</td>
       <td>${formatDate(r.ToDate)}</td>
       <td><strong>${r.DayLeave || 0}</strong></td>
+      <td><strong style="color:var(--accent-cyan)">${r.DayWFH || 0}</strong></td>
       <td style="max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${r.Reason || '—'}</td>
       <td>${getStatusBadge(r.Status)}</td>
       <td style="max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; color:var(--text-muted)">${r.Note || '—'}</td>
