@@ -774,8 +774,14 @@ async function handleSubmitLeave(e) {
   const reason = document.getElementById('reason').value;
   const days = calculateDays();
 
-  if (days <= 0 && leaveType !== 'WFH') {
-    showToast('Ngày kết thúc phải sau ngày bắt đầu', 'error');
+  // Luôn kiểm tra ngày hợp lệ (kể cả WFH)
+  if (fromDate > toDate) {
+    showToast('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu', 'error');
+    return;
+  }
+
+  if (days <= 0) {
+    showToast('Vui lòng chọn ngày hợp lệ', 'error');
     return;
   }
 
