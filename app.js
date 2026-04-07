@@ -693,19 +693,19 @@ function loadNewRequestForm() {
   const userEmail = currentAccount.username || DEMO_USER.username;
   document.getElementById('formEmployee').textContent = userEmail;
 
-  // Balance stats
-  const quota = Math.round(leaveBalance?.AnnualQuota || 0);
-  const remaining = Math.round(leaveBalance?.RemainingDays || 0);
-  const taken = Math.round(leaveBalance?.DaysTaken || 0);
+  // Balance stats - dùng Number() + formatNum() giống dashboard
+  const quota = Number(leaveBalance?.AnnualQuota) || 0;
+  const remaining = Number(leaveBalance?.RemainingDays) || 0;
+  const taken = Number(leaveBalance?.DaysTaken) || 0;
 
   // Đếm đơn chờ duyệt
   const pending = leaveRequests.filter(
     r => r.Title?.toLowerCase() === userEmail.toLowerCase() && r.Status === 'Waiting'
   ).length;
 
-  document.getElementById('formQuota').textContent = quota;
-  document.getElementById('formRemaining').textContent = remaining;
-  document.getElementById('formTaken').textContent = taken;
+  document.getElementById('formQuota').textContent = formatNum(quota);
+  document.getElementById('formRemaining').textContent = formatNum(remaining);
+  document.getElementById('formTaken').textContent = formatNum(taken);
   document.getElementById('formPending').textContent = pending;
 
   // Set default dates
