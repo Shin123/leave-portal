@@ -510,10 +510,10 @@ async function loadDashboard() {
       r => r.Title?.toLowerCase() === userEmail.toLowerCase()
     );
 
-    // Stats - không làm tròn để giữ 0.5
-    const quota = leaveBalance?.AnnualQuota || 0;
-    const remaining = leaveBalance?.RemainingDays || 0;
-    const taken = leaveBalance?.DaysTaken || 0;
+    // Stats - convert to Number (SharePoint có thể trả string)
+    const quota = Number(leaveBalance?.AnnualQuota) || 0;
+    const remaining = Number(leaveBalance?.RemainingDays) || 0;
+    const taken = Number(leaveBalance?.DaysTaken) || 0;
     const pending = myRequests.filter(r => r.Status === 'Waiting').length;
 
     animateNumber('statQuota', quota);
@@ -559,6 +559,7 @@ async function loadDashboard() {
 
 // Format số: 2.5 -> "2.5", 3.0 -> "3"
 function formatNum(n) {
+  n = Number(n) || 0;
   return Number.isInteger(n) ? n : parseFloat(n.toFixed(1));
 }
 
