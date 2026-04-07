@@ -510,10 +510,10 @@ async function loadDashboard() {
       r => r.Title?.toLowerCase() === userEmail.toLowerCase()
     );
 
-    // Stats
-    const quota = Math.round(leaveBalance?.AnnualQuota || 0);
-    const remaining = Math.round(leaveBalance?.RemainingDays || 0);
-    const taken = Math.round(leaveBalance?.DaysTaken || 0);
+    // Stats - không làm tròn để giữ 0.5
+    const quota = leaveBalance?.AnnualQuota || 0;
+    const remaining = leaveBalance?.RemainingDays || 0;
+    const taken = leaveBalance?.DaysTaken || 0;
     const pending = myRequests.filter(r => r.Status === 'Waiting').length;
 
     animateNumber('statQuota', quota);
@@ -522,9 +522,9 @@ async function loadDashboard() {
     animateNumber('statPending', pending);
 
     // Balance overview
-    document.getElementById('balanceNumber').textContent = remaining;
-    document.getElementById('barUsed').textContent = taken;
-    document.getElementById('barTotal').textContent = quota;
+    document.getElementById('balanceNumber').textContent = formatNum(remaining);
+    document.getElementById('barUsed').textContent = formatNum(taken);
+    document.getElementById('barTotal').textContent = formatNum(quota);
 
     const pct = quota > 0 ? ((remaining / quota) * 100) : 0;
     setTimeout(() => {
@@ -557,17 +557,24 @@ async function loadDashboard() {
   }
 }
 
+// Format số: 2.5 -> "2.5", 3.0 -> "3"
+function formatNum(n) {
+  return Number.isInteger(n) ? n : parseFloat(n.toFixed(1));
+}
+
 function animateNumber(elementId, target) {
   const el = document.getElementById(elementId);
   const duration = 800;
   const start = performance.now();
-  const initial = parseInt(el.textContent) || 0;
+  const initial = parseFloat(el.textContent) || 0;
+  const isDecimal = !Number.isInteger(target);
 
   function step(now) {
     const elapsed = now - start;
     const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-    el.textContent = Math.round(initial + (target - initial) * eased);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = initial + (target - initial) * eased;
+    el.textContent = progress >= 1 ? formatNum(target) : (isDecimal ? current.toFixed(1) : Math.round(current));
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
